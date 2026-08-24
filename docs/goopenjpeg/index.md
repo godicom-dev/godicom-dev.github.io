@@ -178,14 +178,30 @@ ver, err := goopenjpeg.OpenJPEGVersion() // e.g. "2.5.4"
 The native libraries are prebuilt per platform, embedded with `//go:embed` in
 `native/libs/`, and called through
 [`purego`](https://github.com/ebitengine/purego). So `go get` needs no CMake and
-`CGO_ENABLED=0` builds work — but the module only runs where a library has been
-built:
+`CGO_ENABLED=0` builds work. Every desktop platform is covered:
 
 | OS | amd64 | arm64 |
 |----|-------|-------|
 | Linux | ✅ | ✅ |
-| macOS | — | ✅ |
-| Windows | ✅ | — |
+| macOS | ✅ | ✅ |
+| Windows | ✅ | ✅ |
+
+Anywhere else the module still **builds** — it just cannot decode or encode.
+Every function returns an error wrapping `ErrUnsupportedPlatform`, so a program
+that imports `goopenjpeg` (or `godicom`, which does) keeps compiling and running
+where no prebuilt library exists, and only JPEG 2000 fails:
+
+```go
+img, err := goopenjpeg.Decode(data)
+if errors.Is(err, goopenjpeg.ErrUnsupportedPlatform) {
+	// no library for this GOOS/GOARCH; err names which one
+}
+```
+
+Loading is lazy and never panics, so a read-only or `noexec` `TMPDIR` surfaces
+the same way — as an error from the first call, not a crash at start-up. CI
+cross-builds for a spread of platforms outside the table, `js/wasm` among them,
+to keep that true.
 
 ## Repository layout
 

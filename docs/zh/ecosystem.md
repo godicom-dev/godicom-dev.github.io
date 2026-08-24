@@ -43,15 +43,15 @@ go get github.com/godicom-dev/godicom
 
 ## 原生编解码器的平台支持 {#platform-support-of-the-native-codecs}
 
-`gorle` 是纯 Go，Go 能跑的地方它都能跑。`golibjpeg` 和 `goopenjpeg` 随包分发预编译动态库，所以只能在已经构建过库的平台上运行：
+`gorle` 是纯 Go，Go 能跑的地方它都能跑。`golibjpeg` 和 `goopenjpeg` 随包分发预编译动态库，桌面平台已经全覆盖：
 
 | 操作系统 | amd64 | arm64 |
 |----|-------|-------|
 | Linux | ✅ | ✅ |
-| macOS | — | ✅ |
-| Windows | ✅ | — |
+| macOS | ✅ | ✅ |
+| Windows | ✅ | ✅ |
 
-Intel 版 macOS 和 ARM 版 Windows 没有覆盖。如果你需要其中之一，请到对应的编解码器仓库开 issue，而不是 godicom —— 构建矩阵在那边。
+表外的平台 —— 32 位目标、`js/wasm`、各种 BSD —— 编解码器仍然**能编译**，import 它们是安全的。只有压缩传输语法会失败，返回一个包装了 `ErrUnsupportedPlatform` 的 error；库是首次使用时才惰性加载的，程序启动阶段不会 panic。如果你需要表外的平台，请到对应的编解码器仓库开 issue，而不是 godicom —— 构建矩阵在那边。
 
 ## 调用方不需要 CGO {#no-cgo-for-callers}
 

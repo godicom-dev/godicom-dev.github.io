@@ -167,13 +167,24 @@ ver, err := goopenjpeg.OpenJPEGVersion() // e.g. "2.5.4"
 ## 它怎么工作，代价是什么 {#how-it-works-and-what-that-costs}
 
 原生库按平台预先构建，用 `//go:embed` 嵌在 `native/libs/` 里，并通过
-[`purego`](https://github.com/ebitengine/purego) 调用。所以 `go get` 不需要 CMake，`CGO_ENABLED=0` 也能构建 —— 但这个 module 只能跑在已经构建过库的平台上：
+[`purego`](https://github.com/ebitengine/purego) 调用。所以 `go get` 不需要 CMake，`CGO_ENABLED=0` 也能构建。桌面平台已经全覆盖：
 
 | 操作系统 | amd64 | arm64 |
 |----|-------|-------|
 | Linux | ✅ | ✅ |
-| macOS | — | ✅ |
-| Windows | ✅ | — |
+| macOS | ✅ | ✅ |
+| Windows | ✅ | ✅ |
+
+表外的平台上这个 module 依然**能构建** —— 只是不能解码或编码。每个函数都会返回一个包装了 `ErrUnsupportedPlatform` 的 error，所以一个 import 了 `goopenjpeg`（或者 import 了 godicom，它又依赖 goopenjpeg）的程序，在没有预编译库的平台上照样能编译、能运行，只有 JPEG 2000 会失败：
+
+```go
+img, err := goopenjpeg.Decode(data)
+if errors.Is(err, goopenjpeg.ErrUnsupportedPlatform) {
+	// no library for this GOOS/GOARCH; err names which one
+}
+```
+
+加载是惰性的，永远不 panic，所以只读或者带 `noexec` 的 `TMPDIR` 也是同样的表现 —— 第一次调用时返回 error，而不是启动即崩。CI 会为表外的一批平台做交叉编译（`js/wasm` 也在内），保证这条一直成立。
 
 ## 仓库结构 {#repository-layout}
 
