@@ -4,6 +4,7 @@
   "scripts": {
     "dev": "vitepress dev docs",
     "build": "vitepress build docs",
+    "check": "vitepress build docs && node scripts/check-i18n.cjs",
     "serve": "vitepress serve docs"
   },
   "devDependencies": {

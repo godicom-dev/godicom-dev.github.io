@@ -32,7 +32,9 @@ jobs:
 
       - run: npm ci
 
-      - run: npm run build
+      # Builds, then checks internal links, fragments, and that the English and
+      # Chinese trees still mirror each other. A failure here stops the deploy.
+      - run: npm run check
 
       - uses: actions/configure-pages@v5
 

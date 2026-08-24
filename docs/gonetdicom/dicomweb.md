@@ -24,7 +24,7 @@ client, err := dicomweb.NewClient("https://pacs.example/dicom-web",
 )
 ```
 
-## STOW-RS — store
+## STOW-RS — store {#stow-rs-store}
 
 ```go
 _, err := client.StoreFiles(ctx, "", []*godicom.FileDataset{fd})
@@ -33,7 +33,7 @@ _, err := client.StoreFiles(ctx, "", []*godicom.FileDataset{fd})
 The second argument is the study UID to store into; empty means the server
 decides from the instances.
 
-## WADO-RS — retrieve
+## WADO-RS — retrieve {#wado-rs-retrieve}
 
 ```go
 raw, err := client.RetrieveInstance(ctx, studyUID, seriesUID, sopUID)
@@ -64,7 +64,7 @@ locally, with the LUTs of your choosing. The second is reproducible; the first i
 one round trip.
 :::
 
-## QIDO-RS — search
+## QIDO-RS — search {#qido-rs-search}
 
 ```go
 matches, err := client.SearchStudies(ctx, url.Values{"PatientID": {"P001"}})
