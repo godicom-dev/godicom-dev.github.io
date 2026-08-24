@@ -56,17 +56,20 @@ as portable as the embedded libraries.
 ## Platform support of the native codecs
 
 `gorle` is pure Go and runs wherever Go runs. `golibjpeg` and `goopenjpeg` ship
-prebuilt shared libraries, so they run only where a library has been built:
+prebuilt shared libraries, and every desktop platform is covered:
 
 | OS | amd64 | arm64 |
 |----|-------|-------|
 | Linux | ✅ | ✅ |
-| macOS | — | ✅ |
-| Windows | ✅ | — |
+| macOS | ✅ | ✅ |
+| Windows | ✅ | ✅ |
 
-macOS on Intel and Windows on ARM are not covered. If you need one of those,
-open an issue on the codec repository rather than on godicom — that is where the
-build matrix lives.
+Anywhere else — a 32-bit target, `js/wasm`, a BSD — the codecs still **compile**
+and importing them stays safe. Only the compressed transfer syntaxes fail, with
+an error wrapping `ErrUnsupportedPlatform`; the library loads lazily on first
+use, so nothing panics at program start. If you need a platform outside the
+table, open an issue on the codec repository rather than on godicom — that is
+where the build matrix lives.
 
 ## No CGO for callers
 

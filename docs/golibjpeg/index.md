@@ -142,14 +142,18 @@ Decoding is stripe-based — eight lines at a time — which keeps memory pressu
 down on large images. Output is native precision, 8- or 16-bit,
 planar-interleaved.
 
-The cost is the same as for [goopenjpeg](/goopenjpeg/): it runs only where a
-library has been built.
+The cost is the same as for [goopenjpeg](/goopenjpeg/): decoding needs a prebuilt
+library. Every desktop platform is covered:
 
 | OS | amd64 | arm64 |
 |----|-------|-------|
 | Linux | ✅ | ✅ |
-| macOS | — | ✅ |
-| Windows | ✅ | — |
+| macOS | ✅ | ✅ |
+| Windows | ✅ | ✅ |
+
+Anywhere else the module still **builds**, and every function returns an error
+wrapping `ErrUnsupportedPlatform` instead. Loading is lazy, so nothing panics at
+program start.
 
 ## Repository layout
 

@@ -134,13 +134,15 @@ Go 这边通过
 
 解码是按条带来的 —— 一次八行 —— 这让大图上的内存压力保持在低位。输出是原生精度，8 位或 16 位，planar-interleaved。
 
-代价跟 [goopenjpeg](/zh/goopenjpeg/) 一样：只能跑在已经构建过库的平台上。
+代价跟 [goopenjpeg](/zh/goopenjpeg/) 一样：解码需要一个预编译库。桌面平台已经全覆盖：
 
 | 操作系统 | amd64 | arm64 |
 |----|-------|-------|
 | Linux | ✅ | ✅ |
-| macOS | — | ✅ |
-| Windows | ✅ | — |
+| macOS | ✅ | ✅ |
+| Windows | ✅ | ✅ |
+
+表外的平台上这个 module 依然**能构建**，每个函数改为返回一个包装了 `ErrUnsupportedPlatform` 的 error。加载是惰性的，程序启动阶段不会 panic。
 
 ## 仓库结构 {#repository-layout}
 
