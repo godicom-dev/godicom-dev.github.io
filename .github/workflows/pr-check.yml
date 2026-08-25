@@ -1,0 +1,41 @@
+name: PR check
+
+# The deploy workflow already runs `npm run check` before publishing, so a broken
+# link or an out-of-sync translation cannot reach the site. But it only runs on
+# main, which means the failure arrives after the merge -- main goes red and the
+# site keeps serving the previous build until someone pushes a fix. Running the
+# same check on the pull request moves that signal to where it can still be acted
+# on.
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: build, links, i18n parity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # lastUpdated in config.mts reads git history for each page, so a
+          # shallow clone changes the build output.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Identical to the deploy workflow's gate: builds, then checks internal
+      # links, fragments, and that the English and Chinese trees still mirror
+      # each other.
+      - run: npm run check
