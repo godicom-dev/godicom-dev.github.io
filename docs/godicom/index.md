@@ -69,6 +69,48 @@ rule that they do not get started without a real consumer.
 | JPEG-LS | ✅ | ✅ |
 | JPEG 2000 / HTJ2K | ✅ | ✅ |
 
+## Platforms and binary size
+
+godicom builds and runs anywhere Go does. The native codecs ship prebuilt
+libraries for six platforms — `linux/amd64`, `linux/arm64`, `darwin/amd64`,
+`darwin/arm64`, `windows/amd64`, `windows/arm64` — and everywhere else reading
+and writing still work, with only the four native-codec transfer syntaxes
+returning an error wrapping `ErrUnsupportedPlatform`. See
+[the ecosystem page](../ecosystem.md) for the degradation story in full.
+
+A binary carries **one platform's libraries, never all twelve**. The `//go:embed`
+directives sit behind per-platform build tags, so the linker only ever sees the
+pair for the target being built:
+
+| `cmd/godicom`, `go build` | Size | Embedded libraries |
+|---------------------------|------|--------------------|
+| linux/amd64   | 11.0 MB | 3.7 MB |
+| linux/arm64   | 10.4 MB | 3.4 MB |
+| darwin/amd64  | 10.4 MB | 2.7 MB |
+| darwin/arm64  |  9.8 MB | 2.3 MB |
+| windows/amd64 | 10.5 MB | 2.6 MB |
+| windows/arm64 |  9.8 MB | 2.4 MB |
+| js/wasm       |  8.3 MB | none |
+| linux/386     |  6.4 MB | none |
+
+All twelve libraries together are 17.0 MB, so embedding them unconditionally
+would add about 13.3 MB to every binary — a `linux/amd64` build would be 24.3 MB
+instead of 11.0 MB. To confirm what your own build embeds:
+
+```bash
+go list -f '{{.EmbedFiles}}' github.com/godicom-dev/golibjpeg/native
+```
+
+There is no cgo and no toolchain to install; the libraries load through purego,
+so a plain `go build` is all a cross-compile takes.
+
+CI cross-builds every release for `windows/386`, `linux/386`, `linux/arm`
+(including `GOARM=5`), `linux/riscv64`, `linux/ppc64le`, `js/wasm` and
+`wasip1/wasm`, and runs the full test suite on 32-bit — a DICOM value length is
+unsigned 32 bits, so 32-bit targets are where width mistakes surface.
+`linux/mips` and `linux/mipsle` do not build, because purego does not support
+them yet.
+
 ## Repository documents
 
 The generated API reference is the authority on signatures; these are the

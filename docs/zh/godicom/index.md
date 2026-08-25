@@ -58,6 +58,45 @@ go get github.com/godicom-dev/godicom@latest
 | JPEG-LS | ✅ | ✅ |
 | JPEG 2000 / HTJ2K | ✅ | ✅ |
 
+## 平台与二进制体积 {#platforms-and-binary-size}
+
+Go 能编译的地方，godicom 都能编译、能运行。原生编解码器为六个平台提供预编译库
+—— `linux/amd64`、`linux/arm64`、`darwin/amd64`、`darwin/arm64`、
+`windows/amd64`、`windows/arm64`。表外的平台上，读写照常工作，只有那四种依赖原生
+编解码器的传输语法会返回一个包装了 `ErrUnsupportedPlatform` 的 error。完整的降级
+说明见[生态页](../ecosystem.md)。
+
+一个二进制里**只会带当前平台的那一对库，绝不会带全部十二个**。`//go:embed` 指令都
+放在按平台区分的 build tag 后面，所以链接器只能看到当前目标平台对应的那一对：
+
+| `cmd/godicom`，`go build` | 体积 | 内嵌的库 |
+|---------------------------|------|----------|
+| linux/amd64   | 11.0 MB | 3.7 MB |
+| linux/arm64   | 10.4 MB | 3.4 MB |
+| darwin/amd64  | 10.4 MB | 2.7 MB |
+| darwin/arm64  |  9.8 MB | 2.3 MB |
+| windows/amd64 | 10.5 MB | 2.6 MB |
+| windows/arm64 |  9.8 MB | 2.4 MB |
+| js/wasm       |  8.3 MB | 无 |
+| linux/386     |  6.4 MB | 无 |
+
+十二个库加起来是 17.0 MB。如果无条件全部内嵌，每个二进制都要多出大约 13.3 MB ——
+`linux/amd64` 的构建会变成 24.3 MB，而不是 11.0 MB。想确认你自己的构建到底嵌了
+什么：
+
+```bash
+go list -f '{{.EmbedFiles}}' github.com/godicom-dev/golibjpeg/native
+```
+
+没有 cgo，也不需要装任何工具链；库是通过 purego 加载的，交叉编译一条普通的
+`go build` 就够了。
+
+CI 会为每个 release 交叉编译 `windows/386`、`linux/386`、`linux/arm`（含
+`GOARM=5`）、`linux/riscv64`、`linux/ppc64le`、`js/wasm` 和 `wasip1/wasm`，并在
+32 位上跑完整测试套件 —— DICOM 的值长度是无符号 32 位，所以 32 位目标正是宽度错误
+会暴露出来的地方。`linux/mips` 和 `linux/mipsle` 目前编译不过，因为 purego 还不
+支持它们。
+
 ## 仓库文档 {#repository-documents}
 
 生成的 API 参考是签名的权威；下面这些是意图的权威：
