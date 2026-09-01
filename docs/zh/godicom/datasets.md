@@ -166,10 +166,29 @@ if seq, ok := ds.GetSequence(tag.AnatomicRegionSequence); ok {
 
 ## 私有标签 {#private-tags}
 
+厂商写文件时占用私有组里当时空闲的那个块（PS3.5 §7.8.1），所以厂商文档里写作偏移 `0x01` 的那个元素，在一个文件里是 `(0041,1101)`，在下一个文件里就是 `(0041,1001)`。按创建者名字要这个块，偏移就归你用了：
+
 ```go
-block := ds.PrivateBlock(0x0009, "ACME MEDICAL")
-ds.RemovePrivateTags()
+block, ok := ds.PrivateBlock(0x0041, "ACME 3.2")
+if !ok {
+	// No block for that creator. The ordinary case for another vendor's file,
+	// which is why this returns ok rather than a nil pointer.
+}
+elem, _ := block.Get(0x01)
+fmt.Println(block.GetTag(0x01), elem.Value)
 ```
+
+写入前得先占一个块——一个私有元素，如果它所在的组里没有 Private Creator 说明它属于哪个块，那么任何读取方都无法把它归属给任何人。`NewPrivateBlock` 找一个空闲块、写好 Private Creator 元素，再把块交回来：
+
+```go
+block, err := ds.NewPrivateBlock(0x0041, "ACME 3.2")
+if err != nil {
+	return err
+}
+block.Set(0x01, godicom.VRUS, 4095)
+```
+
+`GetTag`、`Get`、`Set` 和 `Delete` 的偏移是 `uint8`，因为块偏移本来就只是这么大；`ds.PrivateCreators(group)` 列出一个组里有哪些创建者，`ds.RemovePrivateTags()` 删掉所有私有元素。
 
 ## 遍历数据集 {#walking-a-dataset}
 
@@ -210,7 +229,7 @@ fmt.Println(ts.Name(), ts.IsCompressed(), ts.IsDeflated(),
 	ts.IsImplicitVR(), ts.IsLittleEndian())
 ```
 
-`IsTransferSyntax`、`IsRetired`、`IsPrivate`、`IsValid`、`Keyword`、`Type` 和 `ExtraInfo` 把它补齐，`uid.Lookup` 把关键字解析成 UID。
+`IsTransferSyntax`、`IsRetired`、`IsPrivate`、`IsValid`、`Keyword`、`Type` 和 `ExtraInfo` 把它补齐。`uid.Lookup` 收一个 UID，返回注册表里关于它的记录（一个 `uid.Info`）；反方向、从关键字到 UID 的是 `uid.LookupKeyword`。
 
 生成一个：
 

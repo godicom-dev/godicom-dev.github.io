@@ -191,10 +191,37 @@ if seq, ok := ds.GetSequence(tag.AnatomicRegionSequence); ok {
 
 ## Private tags
 
+A vendor reserves whichever block of a private group is free when it writes
+(PS3.5 §7.8.1), so the element a vendor documents as offset `0x01` is
+`(0041,1101)` in one file and `(0041,1001)` in the next. Ask for the block by
+creator name and the offsets are yours to use:
+
 ```go
-block := ds.PrivateBlock(0x0009, "ACME MEDICAL")
-ds.RemovePrivateTags()
+block, ok := ds.PrivateBlock(0x0041, "ACME 3.2")
+if !ok {
+	// No block for that creator. The ordinary case for another vendor's file,
+	// which is why this returns ok rather than a nil pointer.
+}
+elem, _ := block.Get(0x01)
+fmt.Println(block.GetTag(0x01), elem.Value)
 ```
+
+Writing needs a block reserved first — a private element whose group holds no
+Private Creator naming its block is one no reader can attribute to anyone.
+`NewPrivateBlock` finds a free block, writes the Private Creator element and
+hands back the block:
+
+```go
+block, err := ds.NewPrivateBlock(0x0041, "ACME 3.2")
+if err != nil {
+	return err
+}
+block.Set(0x01, godicom.VRUS, 4095)
+```
+
+`GetTag`, `Get`, `Set` and `Delete` take the offset as a `uint8`, which is what a
+block offset is; `ds.PrivateCreators(group)` lists the creators a group names,
+and `ds.RemovePrivateTags()` drops every private element.
 
 ## Walking a dataset
 
@@ -245,7 +272,9 @@ fmt.Println(ts.Name(), ts.IsCompressed(), ts.IsDeflated(),
 ```
 
 `IsTransferSyntax`, `IsRetired`, `IsPrivate`, `IsValid`, `Keyword`, `Type` and
-`ExtraInfo` round it out, and `uid.Lookup` resolves a keyword to a UID.
+`ExtraInfo` round it out. `uid.Lookup` takes a UID and returns what the registry
+records about it as a `uid.Info`; `uid.LookupKeyword` goes the other way, from
+keyword to UID.
 
 Generating one:
 
