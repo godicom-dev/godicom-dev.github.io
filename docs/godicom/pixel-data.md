@@ -81,6 +81,20 @@ frame, err = ds.DisplayFrame(0,
 )
 ```
 
+A `PALETTE COLOR` image skips that grayscale pipeline. `DisplayFrame` expands it
+through its color lookup table and keeps the high byte of a 16-bit entry.
+`ApplyColorLUT` returns the full-depth samples, from the dataset's table or from
+one of the eight well-known palettes (`PET`, `HOT_IRON`, `SPRING`, and the rest)
+by name or SOP Instance UID:
+
+```go
+samples, err := ds.PixelSamples(pixels.WithRaw(true))
+rgb, err := godicom.ApplyColorLUT(samples, ds, "")
+rgb, err = godicom.ApplyColorLUT(samples, nil, "PET")
+```
+
+Supplemental and enhanced palette modules are not supported.
+
 ## Applying LUTs yourself
 
 When you want the intermediate values rather than 8-bit output, the stages are

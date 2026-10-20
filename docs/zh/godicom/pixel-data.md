@@ -72,6 +72,16 @@ frame, err = ds.DisplayFrame(0,
 )
 ```
 
+`PALETTE COLOR` 图像不走上面这条灰度流水线。`DisplayFrame` 用它自己的颜色查找表展开，16 位表项保留高字节。`ApplyColorLUT` 返回完整位深的样本，表可以来自数据集，也可以用八个标准调色板（`PET`、`HOT_IRON`、`SPRING` 等）的名字或 SOP Instance UID：
+
+```go
+samples, err := ds.PixelSamples(pixels.WithRaw(true))
+rgb, err := godicom.ApplyColorLUT(samples, ds, "")
+rgb, err = godicom.ApplyColorLUT(samples, nil, "PET")
+```
+
+补充调色板和增强调色板暂不支持。
+
 ## 自己应用 LUT {#applying-luts-yourself}
 
 当你要的是中间值而不是 8 位输出时，各阶段是分开的：
