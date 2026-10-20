@@ -111,4 +111,5 @@ If you are not sure which repository your question belongs to:
 | Query a PACS (C-FIND, QIDO-RS) | gonetdicom |
 | Decode a bare `.j2k` / `.jpg` file that is not in a DICOM dataset | goopenjpeg / golibjpeg |
 | Report a decoder bug on a specific codestream | the codec module |
-| Handle a specific SOP class, DICOMDIR, or structured reporting | none of them yet — see godicom's TODO |
+| Read a DICOMDIR, or unpack an overlay plane | godicom (`OpenFileSet`, `OverlayArray`; writing a DICOMDIR is not included) |
+| Handle a specific SOP class, or structured reporting | none of them yet — see godicom's TODO |

@@ -1,7 +1,7 @@
 # 日志
 
 *godicom* 用标准库的
-[`log/slog`](https://pkg.go.dev/log/slog)。默认是**静默**的 —— 默认 logger 丢弃一切，和不去开 pydicom 的 `config.debug()` 是同一个精神。
+[`log/slog`](https://pkg.go.dev/log/slog)。默认**不打日志**：默认 logger 丢掉所有记录，和先不调用 pydicom 的 `config.debug()` 一样。
 
 ## 打开它 {#turning-it-on}
 
@@ -14,7 +14,7 @@ logger := slog.New(h)
 ds, err := godicom.ReadFile("ct.dcm", &godicom.ReadOptions{Logger: logger})
 ```
 
-通过 context，用于与 [gonetdicom](/zh/gonetdicom/) 共享的请求域日志：
+也可以放进 context，同一次请求里和 [gonetdicom](/zh/gonetdicom/) 共用：
 
 ```go
 ctx := godicom.WithLogger(context.Background(), logger)
@@ -37,7 +37,7 @@ godicom.SetDefaultLogger(logger)
 
 | 函数 | |
 |----------|--|
-| `WithLogger(ctx, l)` | 把 logger 挂到 context 上 |
+| `WithLogger(ctx, l)` | 把 logger 放进 context |
 | `LoggerFromContext(ctx)` | 读回来 |
 | `SetDefaultLogger(l)` | 设进程级兜底 |
 | `DefaultLogger()` | 读它 |
@@ -62,7 +62,7 @@ godicom show -debug suspect.dcm 2>&1 >/dev/null | grep '"tag":"(7FE0,0010)"'
 
 ## 日志与诊断的区别 {#logging-versus-diagnostics}
 
-这两者回答不同的问题，值得别混起来：
+这两件事回答的不是同一个问题，不要混着用：
 
 - **日志**是读取器做了什么的追踪。它是给你在终端前看的，当一个文件解析不了、你想看它走到了哪一步时。
 - **[诊断](/zh/godicom/diagnostics)**是关于异常的结构化事实，投递给一个回调，带标签、偏移和序列路径。它们是给你的程序看的 —— 用来决定是否接收一个文件，或者用来生成一份交给设备运维方的报告。

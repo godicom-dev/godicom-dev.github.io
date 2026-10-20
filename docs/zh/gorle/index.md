@@ -12,7 +12,7 @@ go get github.com/godicom-dev/gorle
 与 [pylibjpeg-rle](https://github.com/pydicom/pylibjpeg-rle) 在传输语法
 `1.2.840.10008.1.2.5` 上对齐。
 
-三个编解码器 module 里，只有这一个不带嵌入的二进制，所以 Go 能跑的地方它就能跑 —— 没有平台矩阵，首次使用也不用解压。
+三个编解码器模块里，只有这一个不内嵌二进制。Go 能跑的地方它就能跑，没有平台限制，第一次用也不用先解压。
 
 ::: info 你可能并不需要直接用它
 [godicom](/zh/godicom/) 已经在用 gorle 处理 RLE 的 Pixel Data，两个方向都是。当你处理的帧在数据集之外，或者需要 segment 级别的 API 时，才需要直接找 gorle。
@@ -20,7 +20,7 @@ go get github.com/godicom-dev/gorle
 
 ## 先说 planar configuration {#planar-configuration-first}
 
-RLE 正是 planar configuration 咬人的地方，所以在写任何代码之前值得先讲清楚：
+RLE 最容易在 planar configuration 上出错，所以先把方向说清楚：
 
 | 方向 | 像素排布 |
 |-----------|--------------|

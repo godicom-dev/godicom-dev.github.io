@@ -361,3 +361,44 @@ parsed, err := godicom.DecodeDataset(data, uid.ExplicitVRLittleEndian)
 it was read. Values that have not been touched are written from the bytes they
 were read as, which is both faster and lossless — and the reason such values are
 never offered to the write diagnostic hook.
+
+## DICOMDIR
+
+`OpenFileSet` reads a Media Storage Directory and walks the directory records
+in the order their offsets link them: Patient, Study, Series, then the
+instance, or whatever record types the file actually uses. Each instance's path
+is the directory that contains the DICOMDIR, plus its Referenced File ID.
+
+```go
+fs, err := godicom.OpenFileSet("DICOMDIR", nil)
+if err != nil {
+	log.Fatal(err)
+}
+for _, inst := range fs.Instances() {
+	fmt.Println(inst.Path())
+}
+
+matches := fs.Find(map[godicom.Tag]string{
+	tag.PatientID: "77654033",
+})
+if len(matches) == 0 {
+	log.Fatal("no match")
+}
+ds, err := matches[0].Load()
+```
+
+`tag` is `github.com/godicom-dev/godicom/tag`. `Find` requires every tag in the
+query to match. An empty query returns every instance. `SOPInstanceUID`,
+`SOPClassUID` and `TransferSyntaxUID` match the referenced-file elements, and
+each record is searched from the instance up through its ancestors, so a
+Patient ID stored on the patient record still selects that patient's instances.
+
+An instance with an empty File ID, or whose file is missing, is left out and a
+warning is logged. A File ID that resolves outside the DICOMDIR's directory is
+an error. Records the offset chain never reaches are left out; set
+`FileSetOptions{RaiseOrphans: true}` to make that an error.
+
+`LoadFileSet` is the same read, starting from a dataset you already have. Its
+`Filename` must be the path of the DICOMDIR file.
+
+Writing a DICOMDIR, and adding or removing records, is not included.

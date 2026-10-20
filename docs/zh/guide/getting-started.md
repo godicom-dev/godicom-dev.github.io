@@ -61,9 +61,9 @@ if err := ds.SaveAs("ct_updated.dcm", nil); err != nil {
 
 setter 从数据字典取 VR，所以对数值标签调 `SetString`、对整数标签调 `SetFloat`，会在调用处就失败，而不是产出一个接收方会拒收的文件。[数据集](/zh/godicom/datasets)一页完整覆盖 getter 与 setter。
 
-## 一次不落地的往返 {#a-round-trip-with-no-files-involved}
+## 全程在内存里走一遍 {#a-round-trip-with-no-files-involved}
 
-拿来做冒烟测试很合适，本站大多数示例也是这个形状 —— 每个字节都在内存里造出来，所以你不需要任何夹具就能跑：
+适合做冒烟测试。本站大多数示例也是这么写的：每个字节都在内存里造出来，不需要测试文件就能跑：
 
 ```go
 package main
@@ -113,12 +113,12 @@ func main() {
 
 ::: tip
 这段就是 godicom `example_test.go` 里的
-[`Example`](https://pkg.go.dev/github.com/godicom-dev/godicom#example-package)，因此每次提交时 `go test ./...` 都会编译它并核对输出。一段失效的示例会让 CI 挂掉，而不是悄悄误导读者。
+[`Example`](https://pkg.go.dev/github.com/godicom-dev/godicom#example-package)。每次提交时 `go test ./...` 都会编译它并核对输出。示例坏了，CI 会失败，不会静静地误导读者。
 :::
 
-## 查出一个文件藏了什么 {#find-out-what-a-file-is-hiding}
+## 看一个文件到底有什么问题 {#find-out-what-a-file-is-hiding}
 
-默认情况下，读取会保留文件开始变得不合理之前它成功解析出的一切。大多数 DICOM 工具都这么做，这也正是一个损坏的文件为什么经常看起来好得很。设上 `ReadOptions.OnDiagnostic`，你就会被告知：
+默认情况下，读到文件开始不对劲的地方就停，之前已经解析出来的内容会留下来。多数 DICOM 工具都这样，所以坏文件经常看起来好好的。设上 `ReadOptions.OnDiagnostic`，这些异常就会交给你：
 
 ```go
 ds, err := godicom.ReadFile("suspect.dcm", &godicom.ReadOptions{
@@ -131,7 +131,7 @@ ds, err := godicom.ReadFile("suspect.dcm", &godicom.ReadOptions{
 
 `Diagnostic` 本身就是一个 `error`，所以把它返回出去就等于拒收该文件。[诊断](/zh/godicom/diagnostics)一页说明会报哪些东西，以及为什么写入侧也有同一个钩子。
 
-## 取到像素 {#get-at-the-pixels}
+## 读出像素 {#get-at-the-pixels}
 
 ```go
 import "github.com/godicom-dev/godicom/pixels"
@@ -149,7 +149,7 @@ frame, err := ds.DisplayFrame(0)                // 8-bit, display-ready
 
 ## 接下来看哪里 {#where-to-go-next}
 
-- [godicom 概览](/zh/godicom/) —— 数据集库的全部表面
+- [godicom 概览](/zh/godicom/) —— 数据集库能做什么
 - [诊断](/zh/godicom/diagnostics) —— 读写两侧钩子的细节
 - [Pixel Data](/zh/godicom/pixel-data) —— 解码、显示、压缩
 - [gonetdicom](/zh/gonetdicom/) —— 在机器之间搬运影像

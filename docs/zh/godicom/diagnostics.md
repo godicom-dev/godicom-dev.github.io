@@ -1,6 +1,6 @@
 # 诊断
 
-默认情况下，读取会保留文件开始变得不合理之前它解析出的一切。大多数 DICOM 工具都这么做，这也是一个受损文件为什么会看起来很健康。`Diagnostic` 是 godicom 转而告诉你的方式。
+默认情况下，读到文件开始不对劲的地方就停，之前已经解析出来的内容会留下来。多数 DICOM 工具都这样，所以坏文件经常看起来好好的。`Diagnostic` 就是 godicom 把这些异常交给你的方式。
 
 ```go
 type Diagnostic struct {
@@ -16,7 +16,7 @@ type Diagnostic struct {
 }
 ```
 
-一个类型覆盖两个方向 —— 同一个结构体既交给 `ReadOptions.OnDiagnostic`，也交给 `WriteOptions.OnDiagnostic`。
+读和写用的是同一个类型：这个结构体既交给 `ReadOptions.OnDiagnostic`，也交给 `WriteOptions.OnDiagnostic`。
 
 ## 钩子 {#the-hook}
 
@@ -37,7 +37,7 @@ opts := &godicom.ReadOptions{
 }
 ```
 
-返回 `nil`，你得到的是原来那种宽松行为，外加一份哪里出了错的记录。返回诊断本身，你得到的是一个严格解析器。没有模式枚举：你是否设了这个钩子、以及你从里面返回什么，就是那个开关。
+返回 `nil`，解析会继续，同时留下哪里出了错。返回这条诊断，这次读取就失败。没有单独的模式开关：设不设这个回调、回调返回什么，就是开关。
 
 ## 会报什么 {#what-gets-reported}
 
@@ -114,7 +114,7 @@ err := godicom.WriteFile("out.dcm", ds, &godicom.WriteOptions{
 // IS: "3000000000" is outside [-2147483648, 2147483647], the range an IS allows
 ```
 
-返回 `nil` 会按原样写出该值，所以现有调用方写出的东西一点不变；返回诊断则让这次写入失败。这就是 pydicom 在 `config.settings.writing_validation_mode` 里用 `IGNORE` / `WARN` / `RAISE` 表达的三选一，而这里不需要一个模式枚举。
+返回 `nil` 会按原样写出该值，已有调用方写出的内容不变；返回这条诊断，这次写入就失败。pydicom 用 `config.settings.writing_validation_mode` 的 `IGNORE` / `WARN` / `RAISE` 表达同一件事，这里不用再设一个模式枚举。
 
 ### 为什么 setter 一个人做不到这件事 {#why-the-setters-cannot-do-this-alone}
 
@@ -123,14 +123,14 @@ err := godicom.WriteFile("out.dcm", ds, &godicom.WriteOptions{
 钩子管的是 setter 判断不了的部分：
 
 - 一个对它的 Go 类型来说在范围内、对它的 VR 来说不在的值 —— `3000000000` 是个没问题的 Go `int`，却不是个没问题的 `IS`
-- 一个直接用 `Set(NewDataElement(tag, vr, value))` 造出来的元素，VR 是你给的，字典从没被咨询过
+- 直接用 `Set(NewDataElement(tag, vr, value))` 造出来的元素，VR 是你指定的，不会去查数据字典
 - 一个通过 `SetValue` 设的值，它从字典取 VR，但不拿值去对照检查
 
 ### 永远不会送来的 {#what-is-never-offered}
 
 有两样东西有意不会到达写入钩子：
 
-1. **直接按读入时的字节写出的值。** 它们被跳过了重新编码，而产生它们的那次读取已经有过自己的上报机会。
+1. **直接按读入时的字节写出的值。** 这些值不再重新编码，读入那一次已经有机会上报。
 2. **通过 `WriteDataset` 和 `EncodeDataset` 的写入**，它们不接收 `*WriteOptions`，因此带不了钩子。
 
 ## 编译期核对过的示例 {#compile-checked-examples}

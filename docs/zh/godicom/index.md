@@ -4,7 +4,7 @@
 [![CI](https://github.com/godicom-dev/godicom/actions/workflows/ci.yml/badge.svg)](https://github.com/godicom-dev/godicom/actions/workflows/ci.yml)
 [![GoDoc](https://pkg.go.dev/badge/github.com/godicom-dev/godicom)](https://pkg.go.dev/github.com/godicom-dev/godicom)
 
-*godicom* 用 Go 读取、修改和写入 [DICOM](https://www.dicomstandard.org/) 数据。组织里其余部分都建立在它之上。
+*godicom* 用 Go 读写 [DICOM](https://www.dicomstandard.org/) 数据。这个组织里的其他库都建立在它上面。
 
 ```bash
 go get github.com/godicom-dev/godicom@latest
@@ -12,18 +12,18 @@ go get github.com/godicom-dev/godicom@latest
 
 ## 它是什么 {#what-it-is}
 
-一个通用 DICOM 框架，关心的是**数据集** —— 磁盘上的字节、编码规则、数据字典，以及里面的 Pixel Data。它是 [pydicom](https://github.com/pydicom/pydicom) 的 Go 对照物，开发时对着 pydicom 的源码和测试夹具，而不是对着自己以为标准说了什么。
+它是一个面向**数据集**的通用 DICOM 库：磁盘上的字节、编码规则、数据字典，以及里面的 Pixel Data。对应的 Python 库是 [pydicom](https://github.com/pydicom/pydicom)。实现和测试都对照 pydicom 的源码和测试数据，而不是只凭我们对标准的理解。
 
 ## 它有意不做什么 {#what-it-deliberately-is-not}
 
-为了让项目规模可控，它不处理：
+为了把范围收住，这些事情它不做：
 
-- **DICOM 网络通信** —— DIMSE、DICOMweb、与 PACS 交互。那是
+- **DICOM 网络** —— DIMSE、DICOMweb、和 PACS 通信。那是
   [gonetdicom](/zh/gonetdicom/) 的事。
-- **具体 SOP Class 的细节** —— 没有按模态的 IOD 校验，没有 DICOMDIR / file-set 处理，没有结构化报告对象模型。
+- **各 SOP Class 自己的业务** —— 不做按模态的 IOD 校验，也没有结构化报告的对象模型。DICOMDIR 可以读，不能写。
 
-这些不是遗漏，而是明确记在
-[TODO.md](https://github.com/godicom-dev/godicom/blob/main/TODO.md) 里的范围外或推迟项，并且有一条规则：没有真实使用者之前不开工。
+这些写在
+[TODO.md](https://github.com/godicom-dev/godicom/blob/main/TODO.md) 里，是范围外或暂缓项，不是漏做了。没有真实使用方之前，不会开工。
 
 ## 包 {#packages}
 
@@ -39,9 +39,9 @@ go get github.com/godicom-dev/godicom@latest
 
 ## 本站相关页面 {#on-this-site}
 
-- **[数据集](/zh/godicom/datasets)** —— 读取、写入、getter 与 setter、序列，以及编码选项
-- **[诊断](/zh/godicom/diagnostics)** —— 一个被截断或畸形的文件会告诉你什么，以及写出时对应的钩子
-- **[Pixel Data](/zh/godicom/pixel-data)** —— 帧、原始与显示输出、LUT、压缩
+- **[数据集](/zh/godicom/datasets)** —— 读取、写入、getter 与 setter、序列、编码选项，以及读取 DICOMDIR
+- **[诊断](/zh/godicom/diagnostics)** —— 截断或畸形的文件会报出什么，以及写出时对应的回调
+- **[Pixel Data](/zh/godicom/pixel-data)** —— 帧、原始与显示输出、LUT、压缩，以及 Overlay 平面
 - **[DICOM JSON](/zh/godicom/json)** —— JSON Model，双向
 - **[日志](/zh/godicom/logging)** —— `log/slog`，以及读取器发出的属性键
 - **[命令行工具](/zh/godicom/cli)** —— `godicom show`、`read`、`readcopy`
@@ -93,13 +93,11 @@ go list -f '{{.EmbedFiles}}' github.com/godicom-dev/golibjpeg/native
 
 CI 会为每个 release 交叉编译 `windows/386`、`linux/386`、`linux/arm`（含
 `GOARM=5`）、`linux/riscv64`、`linux/ppc64le`、`js/wasm` 和 `wasip1/wasm`，并在
-32 位上跑完整测试套件 —— DICOM 的值长度是无符号 32 位，所以 32 位目标正是宽度错误
-会暴露出来的地方。`linux/mips` 和 `linux/mipsle` 目前编译不过，因为 purego 还不
-支持它们。
+32 位上跑完整测试。DICOM 的值长度是无符号 32 位，整数位宽写错会在 32 位上暴露出来。`linux/mips` 和 `linux/mipsle` 目前编译不过，因为 purego 还不支持它们。
 
 ## 仓库文档 {#repository-documents}
 
-生成的 API 参考是签名的权威；下面这些是意图的权威：
+pkg.go.dev 上的参考从源码生成，函数签名以它为准。下面这些文档说明设计意图：
 
 - [pkg.go.dev](https://pkg.go.dev/github.com/godicom-dev/godicom) —— 完整 API 参考
 - [CHANGELOG.md](https://github.com/godicom-dev/godicom/blob/main/CHANGELOG.md) —— 逐个版本的变更

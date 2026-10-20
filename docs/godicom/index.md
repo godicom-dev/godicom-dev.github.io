@@ -25,8 +25,9 @@ To keep the project manageable it does not handle:
 
 - **DICOM networking** — DIMSE, DICOMweb, PACS interaction. That is
   [gonetdicom](/gonetdicom/).
-- **The specifics of individual SOP classes** — no per-modality IOD validation,
-  no DICOMDIR / file-set handling, no structured reporting object model.
+- **The specifics of individual SOP classes** — no per-modality IOD validation
+  and no structured reporting object model. Reading a DICOMDIR is included;
+  writing one is not.
 
 Those are not oversights; they are recorded as out-of-scope or deferred in
 [TODO.md](https://github.com/godicom-dev/godicom/blob/main/TODO.md), with the
@@ -47,11 +48,11 @@ rule that they do not get started without a real consumer.
 ## On this site
 
 - **[Datasets](/godicom/datasets)** — reading, writing, getters and setters,
-  sequences, and the encoding options
+  sequences, encoding options, and reading a DICOMDIR
 - **[Diagnostics](/godicom/diagnostics)** — what a truncated or malformed file
   tells you, and the matching hook on the way out
 - **[Pixel Data](/godicom/pixel-data)** — frames, raw versus display output,
-  LUTs, compression
+  LUTs, compression, and overlay planes
 - **[DICOM JSON](/godicom/json)** — the JSON Model, both directions
 - **[Logging](/godicom/logging)** — `log/slog`, and the attribute keys the
   reader emits

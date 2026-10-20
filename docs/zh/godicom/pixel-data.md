@@ -1,7 +1,7 @@
 # Pixel Data
 
-本页所有内容都挂在 `*FileDataset` 和
-[`pixels`](https://pkg.go.dev/github.com/godicom-dev/godicom/pixels) 包上。压缩传输语法通过编解码器模块解码，没有注册步骤也没有 build tag —— 这么做的代价见
+本页讲的都是 `*FileDataset` 和
+[`pixels`](https://pkg.go.dev/github.com/godicom-dev/godicom/pixels) 包上的方法。压缩传输语法由编解码器模块解码，不用注册，也没有 build tag。这么做的代价见
 [生态总览](/zh/ecosystem#the-codecs-are-not-optional)。
 
 ```go
@@ -14,8 +14,8 @@ import "github.com/godicom-dev/godicom/pixels"
 |--------|---------|----------|
 | `PixelBytes` | 所有帧拼接起来的 `[]byte` | 你要的是字节，按原生精度 |
 | `PixelFrames` | `[][]byte`，一帧一项 | 你逐帧处理 |
-| `PixelSamples` | `[]float64`，一个 sample 一项 | 你接下来要对它们做算术 |
-| `PixelArray` | `*pixels.Array` —— sample 加几何信息 | 你要的是 pydicom 的 `pixel_array` |
+| `PixelSamples` | `[]float64`，一个采样一项 | 接下来要做计算 |
+| `PixelArray` | `*pixels.Array` —— 采样加几何信息 | 要的是 pydicom 的 `pixel_array` |
 
 ```go
 ds, err := godicom.ReadFile("mr_j2k.dcm", nil)
@@ -29,7 +29,7 @@ one, err := ds.PixelFrames(pixels.WithRaw(true), pixels.WithFrameIndex(0))
 arr, err := ds.PixelArray()
 ```
 
-`pixels.Array` 把形状和数据带在一起，所以你永远不必从数据集里再推一遍：
+`pixels.Array` 把形状和数据放在一起，不用再从数据集里算一遍：
 
 ```go
 type Array struct {
@@ -41,7 +41,7 @@ type Array struct {
 }
 ```
 
-这个几何形状与 pydicom `pixel_array` 的 shape 一致。
+帧数、行数、列数和每像素采样数，与 pydicom `pixel_array` 的 shape 一致。
 
 ## 原始与归一化 {#raw-versus-normalised}
 
@@ -61,7 +61,7 @@ disp, err := ds.PixelBytes()                     // YBR→RGB, interleaved
 
 ## 可直接显示的字节 {#display-ready-bytes}
 
-`DisplayFrame` 把整条显示流水线放进一次调用。它返回一帧 8 位、按像素排列的彩色字节，可以直接交给 JPEG 或 PNG 编码器，其中已应用了 Modality LUT / rescale、VOI LUT / windowing，以及存在时的 Presentation LUT Shape：
+`DisplayFrame` 一次走完显示流程。它返回一帧 8 位、按像素交织的字节，可以直接交给 JPEG 或 PNG 编码器。里面已经做了 Modality LUT / rescale、VOI LUT / windowing，有 Presentation LUT Shape 时也会用上：
 
 ```go
 frame, err := ds.DisplayFrame(0)
@@ -82,9 +82,25 @@ rgb, err = godicom.ApplyColorLUT(samples, nil, "PET")
 
 补充调色板和增强调色板暂不支持。
 
+## Overlay {#overlays}
+
+`OverlayArray` 把一个 1 位 Overlay Plane 拆成 0/1 掩码。`group` 是重复组号，第一层是 `0x6000`，范围是 `0x6000` 到 `0x60FF`：
+
+```go
+ov, err := ds.OverlayArray(0x6000)
+if err != nil {
+	log.Fatal(err)
+}
+bit := ov.At(0, row, col) // 0 或 1
+```
+
+`Samples` 每个像素一个字节，按行优先，值只有 0 或 1。多帧按帧序拼在一起，和 pydicom 的 `overlay_array` 一样，布局是 `(frames, rows, columns)`。没有 Number of Frames in Overlay `(60xx,0015)` 时按 1 帧。位从每个字节的最低位开始拆。
+
+嵌在 Pixel Data 里的 overlay 位目前不支持。
+
 ## 自己应用 LUT {#applying-luts-yourself}
 
-当你要的是中间值而不是 8 位输出时，各阶段是分开的：
+要的是中间值而不是 8 位输出时，每一步都可以单独调用：
 
 ```go
 samples, err := ds.PixelSamples(pixels.WithRaw(true))
@@ -97,7 +113,7 @@ samples, err = ds.ApplyVOILUT(samples, 0, false)    // window index, prefer LUT
 samples, err = ds.ApplyPresentationLUTShape(samples)
 ```
 
-`pixels` 包把同样的操作也提供为自由函数，供你手上的 sample 并非来自数据集时使用。它们的参数是显式传入的，不从数据集里读，所以 `ApplyModalityLUT` 要一个 `ModalityParams`，`ApplyVOILUT` 要一个 `VOIParams`，`ApplyWindowing` 要一个 `WindowConfig`，`ApplyVOI` 要一个 `LUT`：`ApplyRescale`、`ApplyWindowing`、`ApplyVOI`、`ApplyVOILUT`、`ApplyModalityLUT`、`ApplyPresentationLUTShape`、`InvertValues`、`PackDisplayU8`。
+`pixels` 包里也有同样的函数，采样不必来自数据集。参数要自己传，不会去数据集里读：`ApplyModalityLUT` 要一个 `ModalityParams`，`ApplyVOILUT` 要一个 `VOIParams`，`ApplyWindowing` 要一个 `WindowConfig`，`ApplyVOI` 要一个 `LUT`。函数有 `ApplyRescale`、`ApplyWindowing`、`ApplyVOI`、`ApplyVOILUT`、`ApplyModalityLUT`、`ApplyPresentationLUTShape`、`InvertValues`、`PackDisplayU8`。
 
 ## 排布与色彩辅助函数 {#layout-and-colour-helpers}
 
@@ -109,9 +125,9 @@ pixels.ExpandYBR422(src, bitsAllocated)
 pixels.UnpackSamples(data, bitsAllocated, pixelRepresentation, littleEndian)
 ```
 
-## 不靠数据集来描述一幅图像 {#describing-an-image-without-a-dataset}
+## 没有数据集时怎么描述一幅图 {#describing-an-image-without-a-dataset}
 
-`pixels.Descriptor` 是解码器需要的那组属性。你可以从数据集构造一个，也可以自己填好然后直接调用帧级函数：
+`pixels.Descriptor` 是解码器需要的那组属性。可以从数据集构造，也可以自己填好，然后直接调用帧一级的函数：
 
 ```go
 desc, err := pixels.DescriptorFromFile(ds)
@@ -133,7 +149,7 @@ err = ds.CompressPixelData(uid.JPEG2000)        // lossy JPEG 2000
 err = ds.CompressPixelData(uid.HTJ2KLossless)   // .201, LRCP
 ```
 
-`CompressPixelData` 重新编码当前的 Pixel Data，并同时更新 *Pixel Data* 元素和 File Meta 里的 *Transfer Syntax UID*，所以结果是一个自洽的数据集，而不是一堆你事后还得跟头部对上的字节。源帧按 `Raw=true` 解码，因此不会有任何光度后处理被烘进压缩结果里。它是 `*FileDataset` 的方法 —— 裸 `*Dataset` 没有 File Meta 可供同步。
+`CompressPixelData` 会重新编码当前的 Pixel Data，并同时改 *Pixel Data* 元素和 File Meta 里的 *Transfer Syntax UID*。得到的是一份前后一致的数据集，不用再拿字节去对文件头。源帧按 `Raw=true` 解码，光度变换不会写进压缩结果。这是 `*FileDataset` 的方法，裸 `*Dataset` 没有 File Meta 可以一起改。
 
 编码目标：
 

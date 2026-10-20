@@ -1,6 +1,6 @@
 # DICOM JSON
 
-[DICOM JSON Model](https://dicom.nema.org/medical/dicom/current/output/chtml/part18/chapter_F.html)（PS3.18 Annex F）是 DICOMweb 说的语言。
+[DICOM JSON Model](https://dicom.nema.org/medical/dicom/current/output/chtml/part18/chapter_F.html)（PS3.18 Annex F）是 DICOMweb 使用的 JSON 表示。
 [`dicomjson`](https://pkg.go.dev/github.com/godicom-dev/godicom/dicomjson) 包在数据集与它之间双向转换。
 
 ```go
@@ -27,9 +27,9 @@ dss, err := dicomjson.ParseDatasets(arr)
 | `DecodeDataset(r, opts…)` | 直接从 `io.Reader` 读 |
 | `DatasetToMap(ds, opts…)` | `map[string]Element`，如果你想在编码前再加工一遍 |
 
-输出按标签排序，所以对同一个数据集跑两遍会产出逐字节相同的 JSON —— 当你在 diff 夹具或给载荷签名时，这件事的分量比听起来大。
+输出按标签排序，所以同一个数据集编两次，JSON 逐字节相同。比对测试数据、给载荷签名时，这一点比看起来重要。
 
-## 元素的形状 {#the-element-shape}
+## 一个元素长什么样 {#the-element-shape}
 
 ```go
 type Element struct {

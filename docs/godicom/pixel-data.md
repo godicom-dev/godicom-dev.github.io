@@ -95,6 +95,28 @@ rgb, err = godicom.ApplyColorLUT(samples, nil, "PET")
 
 Supplemental and enhanced palette modules are not supported.
 
+## Overlays
+
+`OverlayArray` unpacks a 1-bit Overlay Plane into a 0/1 mask. `group` is the
+repeating group number, `0x6000` for the first plane, and must be between
+`0x6000` and `0x60FF`:
+
+```go
+ov, err := ds.OverlayArray(0x6000)
+if err != nil {
+	log.Fatal(err)
+}
+bit := ov.At(0, row, col) // 0 or 1
+```
+
+`Samples` is one byte per pixel, row-major, and each byte is 0 or 1. More than
+one frame is concatenated in frame order, the same `(frames, rows, columns)`
+layout as pydicom's `overlay_array`. Number of Frames in Overlay `(60xx,0015)`
+defaults to 1 when the element is absent. Bits are unpacked least-significant-bit
+first.
+
+Overlay bits stored inside Pixel Data are not supported.
+
 ## Applying LUTs yourself
 
 When you want the intermediate values rather than 8-bit output, the stages are

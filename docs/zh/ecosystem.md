@@ -1,6 +1,6 @@
 # 生态总览
 
-这个组织有意拆成一个模块负责一件事。没有需要你注册的插件，也没有构建期可选的部分 —— 拆分的目的是划清*谁负责什么*，好让 JPEG 2000 解码的 bug 只有一个归属地，而数据集库不必长出一个编解码部门。
+这个组织故意拆成一个模块做一件事。没有要你注册的插件，构建时也不能把某一块关掉。拆开是为了分清*谁负责什么*：JPEG 2000 的 bug 只在一个仓库里修，数据集库自己不再实现编解码。
 
 ## 各模块 {#the-modules}
 
@@ -85,4 +85,5 @@ godicom 在
 | 查询 PACS（C-FIND、QIDO-RS） | gonetdicom |
 | 解一个不在 DICOM 数据集里的裸 `.j2k` / `.jpg` | goopenjpeg / golibjpeg |
 | 就某个具体码流报解码器 bug | 对应的编解码器模块 |
-| 处理特定 SOP Class、DICOMDIR 或结构化报告 | 目前都不支持 —— 见 godicom 的 TODO |
+| 读 DICOMDIR，或拆开 Overlay 平面 | godicom（`OpenFileSet`、`OverlayArray`；DICOMDIR 不能写） |
+| 处理特定 SOP Class 或结构化报告 | 目前都不支持 —— 见 godicom 的 TODO |

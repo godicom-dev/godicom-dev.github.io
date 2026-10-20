@@ -18,7 +18,7 @@ hero:
 
 features:
   - title: godicom
-    details: 数据集库 —— Part 10 文件、传输语法、数据字典、Pixel Data、DICOM JSON，以及一个命令行工具。组织里其余一切都建立在它之上。
+    details: 数据集库 —— Part 10 文件、传输语法、数据字典、Pixel Data、DICOM JSON，以及一个命令行工具。这个组织里的其他库都建立在它上面。
     link: /zh/godicom/
     linkText: 数据集、诊断、Pixel Data
   - title: gonetdicom
@@ -75,7 +75,7 @@ go get github.com/godicom-dev/godicom@latest
 
 ## 接下来看哪里 {#where-to-go-next}
 
-- **[快速开始](/zh/guide/getting-started)** —— 安装、读第一个文件，以及查出一个畸形文件藏了什么。
+- **[快速开始](/zh/guide/getting-started)** —— 安装、读第一个文件，以及看一个坏文件到底有什么问题。
 - **[生态总览](/zh/ecosystem)** —— 哪个模块负责什么，谁又依赖了谁。
 - **[godicom](/zh/godicom/)** —— 数据集库的细节。
 - **[gonetdicom](/zh/gonetdicom/)** —— 如果你要在机器之间搬运影像，而不是解析它们。

@@ -166,7 +166,7 @@ if seq, ok := ds.GetSequence(tag.AnatomicRegionSequence); ok {
 }
 ```
 
-`Len`、`Get(i)`、`IsEmpty` 和 `Items` 就是全部表面。
+`Len`、`Get(i)`、`IsEmpty` 和 `Items` 就是对外能用的全部方法。
 
 ## 私有标签 {#private-tags}
 
@@ -272,7 +272,7 @@ type WriteOptions struct {
 
 `ImplicitVR` 和 `LittleEndian` 是指针，好让「保持原样」能和「改成 explicit little endian」区分开。留 nil 时，从文件读来的数据集会按它进来时的编码写回去。
 
-`EnforceFileFormat` 要求结果是合规的 Part 10，并从数据集填好 File Meta。当你是在创建文件而不是往返一个已有文件时，它就是你要的 —— 而且它会告诉你缺了什么：
+`EnforceFileFormat` 要求结果是合规的 Part 10，并从数据集填好 File Meta。新建文件时用它，回写一份已经存在的文件时不必开。缺了什么，它会直接告诉你：
 
 ```
 required File Meta Information elements are missing or empty:
@@ -297,3 +297,33 @@ parsed, err := godicom.DecodeDataset(data, uid.ExplicitVRLittleEndian)
 ## 重新读入的数据集的编码 {#encoding-of-a-re-read-dataset}
 
 `SetOriginalEncoding` 和 `SetWriteEncoding` 显式设定编码；`IsOriginalEncoding` 报告一个数据集是否会被原样写回。没有被改动过的值会按它们被读入时的字节写出，这样既更快也无损 —— 也正是这类值永远不会被送到写入诊断钩子的原因。
+
+## DICOMDIR {#dicomdir}
+
+`OpenFileSet` 读取一份 Media Storage Directory，按记录之间的偏移把目录记录串成树：Patient、Study、Series，然后是实例。文件里实际用了别的记录类型，也按那个顺序走。每个实例的路径是 DICOMDIR 所在目录，加上它的 Referenced File ID。
+
+```go
+fs, err := godicom.OpenFileSet("DICOMDIR", nil)
+if err != nil {
+	log.Fatal(err)
+}
+for _, inst := range fs.Instances() {
+	fmt.Println(inst.Path())
+}
+
+matches := fs.Find(map[godicom.Tag]string{
+	tag.PatientID: "77654033",
+})
+if len(matches) == 0 {
+	log.Fatal("no match")
+}
+ds, err := matches[0].Load()
+```
+
+`tag` 是 `github.com/godicom-dev/godicom/tag`。`Find` 要求查询里的每个标签都对上。查询为空时返回全部实例。`SOPInstanceUID`、`SOPClassUID` 和 `TransferSyntaxUID` 对的是文件里的 Referenced SOP Instance UID、Referenced SOP Class UID 和 Referenced Transfer Syntax UID。查找从实例自己的记录开始，再往上找祖先，所以写在 Patient 记录上的 Patient ID 也能选出这个病人的实例。
+
+File ID 为空，或者指向的文件不存在，这条实例会被丢掉，并记一条警告。File ID 解析到 DICOMDIR 所在目录之外会报错。偏移链走不到的记录默认不进这棵树；设上 `FileSetOptions{RaiseOrphans: true}`，这种情况改为报错。
+
+`LoadFileSet` 做的是同一次读取，起点是你已经解析好的数据集。它的 `Filename` 必须是这份 DICOMDIR 文件的路径。
+
+写 DICOMDIR、增删记录，目前没有。

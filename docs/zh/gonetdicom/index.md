@@ -30,7 +30,7 @@ gonetdicom
 
 日常要写的东西几乎都在 `ae` 里。
 
-## 两种形态 {#the-two-shapes}
+## 两种用法 {#the-two-shapes}
 
 **作为 SCU** —— 由你发起。`ae.Dial` 协商一个关联并返回 `*ae.Association`，你在它上面发 DIMSE 消息：
 
