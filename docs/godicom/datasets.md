@@ -31,8 +31,8 @@ and request-scoped logging: `ReadFileContext`, `ReadContext`, `ReadBytesContext`
 `DecodeDatasetContext`, `DecodeDatasetEncodingContext`.
 
 Prefer a seekable source — an `*os.File` rather than a wrapped stream — so that
-`StopBeforePixels`, `DeferSize` and `SpecificTags` can skip large values instead
-of buffering them.
+`StopBeforePixels`, `DeferSize`, `SpecificTags` and `OnElement` can skip large
+values instead of buffering them.
 
 ### ReadOptions
 
@@ -42,8 +42,10 @@ type ReadOptions struct {
 	StopBeforePixels bool
 	Force            bool
 	SpecificTags     []Tag
+	OnElement        func(RawDataElement, []PathStep) ElementAction
 	Logger           *slog.Logger
 	OnDiagnostic     func(Diagnostic) error
+	Dictionary       Dictionary
 }
 ```
 
@@ -53,10 +55,19 @@ type ReadOptions struct {
   want the header.
 - **`Force`** — read a file that has no DICM prefix, the way pydicom's
   `force=True` does.
-- **`SpecificTags`** — read only these tags (plus the group-length and File Meta
-  elements needed to get there).
+- **`SpecificTags`** — keep these tags at the top level (plus the group-length
+  and File Meta elements needed to get there). A sequence that survives the
+  filter is parsed whole, including every element inside its items.
+- **`OnElement`** — called once per element, after the header and before the
+  value, at every depth. Return `ElementKeep`, `ElementSkip` or `ElementStop`.
+  The hook receives a `RawDataElement` whose `Value` is nil, and the path of
+  enclosing sequences. Group `0x0002` and Specific Character Set are never
+  offered. On a seekable source a skip does not read the value bytes.
+  `StopBeforePixels` and `SpecificTags` run first; the hook can only narrow
+  what they kept.
 - **`Logger`** — see [Logging](/godicom/logging).
 - **`OnDiagnostic`** — see [Diagnostics](/godicom/diagnostics).
+- **`Dictionary`** — resolve tags for this read. Nil uses `Standard()`.
 
 ### Deferred values
 

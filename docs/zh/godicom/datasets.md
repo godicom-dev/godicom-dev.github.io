@@ -26,7 +26,7 @@ type FileDataset struct {
 
 每个都有一个 `…Context` 变体，首参接收 `context.Context`，用于取消和请求域内的日志：`ReadFileContext`、`ReadContext`、`ReadBytesContext`、`DecodeDatasetContext`、`DecodeDatasetEncodingContext`。
 
-尽量给可 seek 的源 —— 用 `*os.File` 而不是包了一层的流 —— 这样 `StopBeforePixels`、`DeferSize` 和 `SpecificTags` 才能跳过大值，而不是把它们缓冲下来。
+尽量给可 seek 的源 —— 用 `*os.File` 而不是包了一层的流 —— 这样 `StopBeforePixels`、`DeferSize`、`SpecificTags` 和 `OnElement` 才能跳过大值，而不是把它们缓冲下来。
 
 ### ReadOptions {#readoptions}
 
@@ -36,17 +36,21 @@ type ReadOptions struct {
 	StopBeforePixels bool
 	Force            bool
 	SpecificTags     []Tag
+	OnElement        func(RawDataElement, []PathStep) ElementAction
 	Logger           *slog.Logger
 	OnDiagnostic     func(Diagnostic) error
+	Dictionary       Dictionary
 }
 ```
 
 - **`DeferSize`** —— 超过这个字节数的值不预先读入。元素存在，值在首次访问时加载。
 - **`StopBeforePixels`** —— 到 *Pixel Data* 停下。只要头部信息时的快路径。
 - **`Force`** —— 读取没有 DICM 前缀的文件，等价于 pydicom 的 `force=True`。
-- **`SpecificTags`** —— 只读这些标签（外加为了到达它们所必需的组长度和 File Meta 元素）。
+- **`SpecificTags`** —— 只保留数据集顶层的这些标签（外加为了到达它们所必需的组长度和 File Meta 元素）。通过过滤的序列会整段解析，item 里的元素不会被丢掉。
+- **`OnElement`** —— 每个元素调用一次，在读完头部、读值之前，每一层都会调用。返回 `ElementKeep`、`ElementSkip` 或 `ElementStop`。钩子拿到的 `RawDataElement` 的 `Value` 是 nil，另有一条外层序列的路径。组 `0x0002` 和 Specific Character Set 不会交给钩子。在可 seek 的源上，跳过不会去读值的字节。`StopBeforePixels` 和 `SpecificTags` 先执行；钩子只能在它们留下的范围内再收窄。
 - **`Logger`** —— 见[日志](/zh/godicom/logging)。
 - **`OnDiagnostic`** —— 见[诊断](/zh/godicom/diagnostics)。
+- **`Dictionary`** —— 为这一次读取解析标签。nil 时用 `Standard()`。
 
 ### 延迟加载的值 {#deferred-values}
 
